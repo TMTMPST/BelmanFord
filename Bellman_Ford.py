@@ -1,11 +1,9 @@
-import matplotlib.pyplot as plt
-import networkx as nx
-
 def bellman_ford(graph, start):
     distance = {node: float('inf') for node in graph}
     distance[start] = 0
     predecessor = {node: None for node in graph}
 
+    # Relaksasi semua edge sebanyak |V| - 1 kali
     for _ in range(len(graph) - 1):
         for u in graph:
             for v, weight in graph[u]:
@@ -13,38 +11,23 @@ def bellman_ford(graph, start):
                     distance[v] = distance[u] + weight
                     predecessor[v] = u
 
-    # Check negative-weight cycles
+    # Cek siklus negatif
     for u in graph:
         for v, weight in graph[u]:
             if distance[u] + weight < distance[v]:
-                raise Exception("Negative-weight cycle detected!")
+                raise Exception("Terdapat siklus dengan bobot negatif!")
 
     return distance, predecessor
 
-def draw_graph(graph, distances, predecessors, start, end):
-    G = nx.DiGraph()
-    for u in graph:
-        for v, w in graph[u]:
-            G.add_edge(u, v, weight=w)
-
-    pos = nx.spring_layout(G, seed=42)
-    edge_labels = nx.get_edge_attributes(G, 'weight')
-
-    # Draw all edges/nodes
-    nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=1000, font_weight='bold')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
-
-    # Highlight path from start to end
+def get_path(predecessor, start, end):
     path = []
     current = end
-    while current != start and current is not None:
-        path.append((predecessors[current], current))
-        current = predecessors[current]
-
-    nx.draw_networkx_edges(G, pos, edgelist=path, edge_color='green', width=2.5)
-
-    plt.title(f"Bellman-Ford Shortest Path from {start} to {end}")
-    plt.show()
+    while current is not None:
+        path.insert(0, current)
+        current = predecessor[current]
+    if path[0] != start:
+        return None  # tidak ada jalur
+    return path
 
 if __name__ == "__main__":
     graph = {
@@ -64,5 +47,11 @@ if __name__ == "__main__":
     for node in distances:
         print(f"  {start_node} → {node}: {distances[node]}")
 
-    print(f"\nJarak terpendek dari {start_node} ke {end_node}: {distances[end_node]}")
-    draw_graph(graph, distances, preds, start_node, end_node)
+    path_to_S = get_path(preds, start_node, end_node)
+
+    print("\nJalur tercepat dari P ke S:")
+    if path_to_S:
+        print(" → ".join(path_to_S))
+        print(f"Total jarak: {distances[end_node]}")
+    else:
+        print("Tidak ada jalur dari P ke S")
